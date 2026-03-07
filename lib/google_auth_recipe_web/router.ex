@@ -1,6 +1,8 @@
 defmodule GoogleAuthRecipeWeb.Router do
   use GoogleAuthRecipeWeb, :router
 
+  import GoogleAuthRecipeWeb.Auth.UserAuth
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -8,6 +10,7 @@ defmodule GoogleAuthRecipeWeb.Router do
     plug :put_root_layout, html: {GoogleAuthRecipeWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_user
   end
 
   pipeline :api do
@@ -15,9 +18,39 @@ defmodule GoogleAuthRecipeWeb.Router do
   end
 
   scope "/", GoogleAuthRecipeWeb do
-    pipe_through :browser
+    pipe_through [:browser]
 
     get "/", PageController, :home
+  end
+
+  scope "/", GoogleAuthRecipeWeb do
+    pipe_through [:browser, :redirect_if_user_is_authenticated]
+
+    get "/protected", ProtectedController, :show
+
+    live_session :authenticated,
+      on_mount: [
+        {GoogleAuthRecipeWeb.Auth.UserAuth, :ensure_authenticated},
+        {GoogleAuthRecipeWeb.Auth.UserAuth, :mount_current_user}
+      ] do
+      # live "/some_path", SomeLive.Index
+    end
+  end
+
+  ## Authentication routes
+
+  scope "/auth", GoogleAuthRecipeWeb.Auth do
+    pipe_through [:browser, :redirect_if_user_is_authenticated]
+
+    get "/log_in", UserSessionController, :new
+  end
+
+  scope "/auth", GoogleAuthRecipeWeb.Auth do
+    pipe_through [:browser]
+
+    delete "/log_out", UserSessionController, :delete
+    get "/:provider", GoogleController, :request
+    get "/:provider/callback", GoogleController, :callback
   end
 
   # Other scopes may use custom stacks.

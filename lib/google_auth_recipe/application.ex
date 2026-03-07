@@ -10,7 +10,8 @@ defmodule GoogleAuthRecipe.Application do
     children = [
       GoogleAuthRecipeWeb.Telemetry,
       GoogleAuthRecipe.Repo,
-      {DNSCluster, query: Application.get_env(:google_auth_recipe, :dns_cluster_query) || :ignore},
+      {DNSCluster,
+       query: Application.get_env(:google_auth_recipe, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: GoogleAuthRecipe.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: GoogleAuthRecipe.Finch},
